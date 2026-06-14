@@ -2,11 +2,11 @@ import bcrypt       from 'bcryptjs';
 import crypto        from 'crypto';
 import { Request }   from 'express';
 import { UAParser } from 'ua-parser-js'
-import { MailSender }                      from '../config/Mail/MailConfig.ts';
-import { GetAgent, GetIP, GetOS }          from '../config/AuthProvider.ts';
+import { MailSender }                      from '../config/Mail/MailConfig';
+import { GetAgent, GetIP, GetOS }          from '../config/AuthProvider';
 import { OTPModel }                        from '../Models';
 import { generateOtpSessionToken }         from '../utils/token.utils';
-import { OtpPurpose, LoginNotificationPayload } from '../Types/auth.types.ts';
+import { OtpPurpose, LoginNotificationPayload } from '../Types/auth.types';
 import {
     ForgetTemplate,
     LoginTemplate,

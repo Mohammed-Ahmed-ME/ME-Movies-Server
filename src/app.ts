@@ -14,7 +14,7 @@ import { AuthRoutes, UserRoutes }                        from './routes/index';
 import MovieRoutes                                       from './routes/MovieRoutes';
 import ErrorHandler                                      from './Middlewares/error';
 import { RouteItem }                                     from './HTML/API';
-import AuditMiddleware from "./Middlewares/AuditMiddleware.ts";
+import AuditMiddleware from "./Middlewares/AuditMiddleware";
 
 const app = express();
 

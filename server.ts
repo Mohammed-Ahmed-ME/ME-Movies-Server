@@ -1,5 +1,5 @@
-import app from "./src/app.ts";
-import Connect, { closeDatabase } from "./src/config/db/dbConnect.ts";
+import app from "./src/app";
+import Connect, { closeDatabase } from "./src/config/db/dbConnect";
 
 /* ===============================
    Handle uncaught exceptions (MUST be first)

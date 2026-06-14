@@ -9,7 +9,7 @@ import {
 } from '../Controllers/Auth.controller';
 import {
   authenticateOtpSession,
-} from '../Middlewares/AuthMiddleware.ts';
+} from '../Middlewares/AuthMiddleware';
 import {
   LoginValidator,
   RegisterValidator,

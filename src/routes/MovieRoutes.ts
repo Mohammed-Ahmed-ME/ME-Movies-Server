@@ -1,6 +1,6 @@
 import express from "express"
-import {GetMovieLink,SetMovieLink} from "../Controllers/Movie.controller.ts";
-import {authenticateUser } from "../Middlewares/AuthMiddleware.ts";
+import {GetMovieLink,SetMovieLink} from "../Controllers/Movie.controller";
+import {authenticateUser } from "../Middlewares/AuthMiddleware";
 const MovieRoutes = express.Router()
 
 MovieRoutes.get('/Get-Movie-Link', GetMovieLink)

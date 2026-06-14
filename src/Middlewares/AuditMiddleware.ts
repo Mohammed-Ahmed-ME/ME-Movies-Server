@@ -1,9 +1,9 @@
 // src/Middlewares/audit.middleware.ts
 import { Request, Response, NextFunction } from 'express';
 import mongoose                             from 'mongoose';
-import {AuthenticatedRequest} from "../Types/auth.types.ts";
+import {AuthenticatedRequest} from "../Types/auth.types";
 import {AuditingModel} from "../Models";
-import {extractRequestMeta} from "../Services/auth.service.ts";
+import {extractRequestMeta} from "../Services/auth.service";
 
 /* ─────────────────────────────────────────
    Sensitive keys — never stored in logs

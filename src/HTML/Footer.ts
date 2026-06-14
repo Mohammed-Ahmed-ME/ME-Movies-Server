@@ -1,6 +1,5 @@
 // Footer.ts
 import { TemplateData } from "./Data";
-import {imageToBase64} from "../utils/imageToBase64.ts";
 
 const FooterPartial = (): string => {
     const { app } = TemplateData;
