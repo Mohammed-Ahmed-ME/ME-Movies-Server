@@ -60,38 +60,42 @@ const AuditMiddleware = (
         const reqData = extractRequestMeta(req)
 
         // Fire-and-forget — never blocks the response
-        AuditingModel.create({
-            userId: req.user?.userId
-                ? new mongoose.Types.ObjectId(req.user.userId)
-                : undefined,
-            action: `${req.method} ${req.path}`,
-            request: {
-                ip:      reqData.ip,
-                agent:   reqData.browser,
-                os:      reqData.os,
-                device:  reqData.deviceName,
-                method:  req.method,
-                path:    req.originalUrl,
-                params:  req.params  ?? {},
-                query:   req.query   ?? {},
-                body:    sanitize(req.body),
-                // Headers: keep only safe, useful ones
-                headers: {
-                    'content-type':  req.headers['content-type'],
-                    'authorization': req.headers['authorization'] ? '[PRESENT]' : '[ABSENT]',
-                    'x-forwarded-for': req.headers['x-forwarded-for'],
+        if (mongoose.connection.readyState === 1) {
+            AuditingModel.create({
+                userId: req.user?.userId
+                    ? new mongoose.Types.ObjectId(req.user.userId)
+                    : undefined,
+                action: `${req.method} ${req.path}`,
+                request: {
+                    ip:      reqData.ip,
+                    agent:   reqData.browser,
+                    os:      reqData.os,
+                    device:  reqData.deviceName,
+                    method:  req.method,
+                    path:    req.originalUrl,
+                    params:  req.params  ?? {},
+                    query:   req.query   ?? {},
+                    body:    sanitize(req.body),
+                    // Headers: keep only safe, useful ones
+                    headers: {
+                        'content-type':  req.headers['content-type'],
+                        'authorization': req.headers['authorization'] ? '[PRESENT]' : '[ABSENT]',
+                        'x-forwarded-for': req.headers['x-forwarded-for'],
+                    },
                 },
-            },
-            response: {
-                status:   res.statusCode,
-                message:  responseBody?.['message'] as string ?? '',
-                data:     responseBody?.['data'],
-                error:    responseBody?.['error']   as string ?? undefined,
-                duration,
-            },
-        }).catch((err) =>
-            console.error('[AuditMiddleware] Failed to write audit log:', err)
-        );
+                response: {
+                    status:   res.statusCode,
+                    message:  responseBody?.['message'] as string ?? '',
+                    data:     responseBody?.['data'],
+                    error:    responseBody?.['error']   as string ?? undefined,
+                    duration,
+                },
+            }).catch((err) =>
+                console.error('[AuditMiddleware] Failed to write audit log:', err)
+            );
+        } else {
+            console.warn('[AuditMiddleware] Skipping audit log, DB not connected, state:', mongoose.connection.readyState);
+        }
     });
 
     next();

@@ -1,3 +1,6 @@
+import mongoose from "mongoose";
+mongoose.set("bufferCommands", false);
+
 import app from "./src/app";
 import Connect, { closeDatabase } from "./src/config/db/dbConnect";
 
