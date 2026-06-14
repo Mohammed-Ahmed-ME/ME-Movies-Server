@@ -84,7 +84,7 @@ app.use(cors(CorsOptions));
 app.use(cookieParser());
 
 // Trust proxy only in production to get real client IP behind load balancer
-if (isProd) app.set('trust proxy', 1);
+app.set('trust proxy', 1);
 
 app.use(
     helmet({
