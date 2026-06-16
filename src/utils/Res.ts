@@ -1,5 +1,5 @@
 import { Response } from "express";
-import {UserModel} from "../Models/index";
+import prisma from "../Models";
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 export const AppError = (res:Response , code:number,message:string,data?:any ) => {
@@ -30,7 +30,7 @@ export const CheckAllow = async (
     userId: string,
     allowed: string[]
 ) => {
-    const requester = await UserModel.findById(requesterId);
+    const requester = await prisma.user.findUnique({ where: { id: requesterId } });
 
     if (!requester) {
         AppError(res, 404, 'Requester not found');

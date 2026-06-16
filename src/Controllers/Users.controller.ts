@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { UserModel } from "../Models/index";
+import prisma from "../Models";
 import bcrypt from "bcryptjs";
 import { AppError, AppSuccess } from "../utils/Res";
 
@@ -10,7 +10,7 @@ import { AppError, AppSuccess } from "../utils/Res";
 export const Profile = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const user = await UserModel.findById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       return AppError(res, 404, "User not found");
@@ -41,9 +41,9 @@ export const UpdateProfile = async (req: Request, res: Response) => {
     delete updates.id;
     delete updates.createdAt;
     delete updates.updatedAt;
-    const updatedUser = await UserModel.findByIdAndUpdate(userId, updates, {
-      new: true,
-      runValidators: true,
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updates,
     });
 
     if (!updatedUser) {
@@ -63,18 +63,21 @@ export const UpdatePassword = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     const { password, newPassword } = req.body;
-    const user = await UserModel.findById(userId, "password").select(
-      "password",
-    );
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true },
+    });
     if (!user) {
-      return AppError(res, 404, "UserModel not found");
+      return AppError(res, 404, "User not found");
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return AppError(res, 400, "Current password is incorrect");
     }
-    user.password = newPassword;
-    await user.save();
+    await prisma.user.update({
+        where: { id: userId },
+        data: { password: await bcrypt.hash(newPassword, 12) }
+    });
     return AppSuccess(res, 200, "Password updated successfully");
   } catch (error) {
     console.error("Error updating user:", error);

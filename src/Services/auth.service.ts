@@ -4,7 +4,7 @@ import { Request }   from 'express';
 import { UAParser } from 'ua-parser-js'
 import { MailSender }                      from '../config/Mail/MailConfig';
 import { GetAgent, GetIP, GetOS }          from '../config/AuthProvider';
-import { OTPModel }                        from '../Models';
+import prisma from '../Models';
 import { generateOtpSessionToken }         from '../utils/token.utils';
 import { OtpPurpose, LoginNotificationPayload } from '../Types/auth.types';
 import {
@@ -36,9 +36,12 @@ export const createAndSendOtp = async (
         .toString()
         .padStart(OTP_LENGTH, '0');
 
+    // Hash the OTP
+    const hashedOtp = await bcrypt.hash(otpCode, 10);
+
     // Ensure only one active OTP per user
-    await OTPModel.deleteOne({ userId });
-    await new OTPModel({ userId, otpCode, attempts: 0 }).save();
+    await prisma.oTP.deleteMany({ where: { userId } });
+    await prisma.oTP.create({ data: { userId, otpCode: hashedOtp, attempts: 0 } });
 
     const emailHtml =
         purpose === 'forgot'
@@ -61,14 +64,14 @@ export const verifyOtpCode = async (
     userId:  string,
     otpCode: string,
 ): Promise<void> => {
-    const record = await OTPModel.findOne({ userId });
+    const record = await prisma.oTP.findFirst({ where: { userId } });
 
     if (!record) {
         throw new Error('OTP has expired or is invalid. Please request a new one.');
     }
 
     if (record.attempts >= MAX_OTP_ATTEMPTS) {
-        await OTPModel.deleteOne({ userId });
+        await prisma.oTP.deleteMany({ where: { userId } });
         throw new Error(
             `Too many incorrect attempts. Your OTP has been invalidated. Please request a new one.`
         );
@@ -78,7 +81,10 @@ export const verifyOtpCode = async (
 
     if (!isMatch) {
         record.attempts += 1;
-        await record.save();
+        await prisma.oTP.update({
+            where: { id: record.id },
+            data: { attempts: record.attempts }
+        });
 
         const remaining = MAX_OTP_ATTEMPTS - record.attempts;
         throw new Error(
@@ -89,7 +95,7 @@ export const verifyOtpCode = async (
     }
 
     // Success — remove record so it can't be reused
-    await OTPModel.deleteOne({ userId });
+    await prisma.oTP.deleteMany({ where: { userId } });
 };
 
 /* ─────────────────────────────────────────

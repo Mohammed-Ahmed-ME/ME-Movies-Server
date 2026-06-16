@@ -5,9 +5,9 @@ import express, { Request, Response } from 'express';
 import rateLimit     from 'express-rate-limit';
 import favicon       from 'serve-favicon';
 import helmet        from 'helmet';
-import mongoose      from 'mongoose';
 import morgan        from 'morgan';
 import path          from 'node:path';
+import { closeDatabase } from './config/db/dbConnect';
 
 import { APITemplate, HealthTemplate, NotFoundTemplate } from './HTML/index';
 import { AuthRoutes, UserRoutes }                        from './routes/index';
@@ -199,7 +199,7 @@ app.use(ErrorHandler);
 const gracefulShutdown = async (signal: string): Promise<void> => {
   console.log(`\n[${signal}] Shutting down gracefully...`);
   try {
-    await mongoose.connection.close();
+    await closeDatabase();
     console.log('✅ Database connection closed.');
   } catch (err) {
     console.error('❌ Error closing database connection:', err);

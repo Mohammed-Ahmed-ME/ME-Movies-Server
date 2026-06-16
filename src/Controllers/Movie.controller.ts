@@ -1,5 +1,5 @@
 import {AppError,AppSuccess} from "../utils/Res";
-import MovieModel from "../Models/MovieModel"
+import prisma from "../Models";
 import {Request, Response} from "express";
 
 export const GetMovieLink = async (req: Request, res: Response) => {
@@ -7,7 +7,7 @@ export const GetMovieLink = async (req: Request, res: Response) => {
     console.log(params)
     const id = req.query.id;
     if(!id) return AppError(res, 400, "Movie Id Dose not provided");
-    const movie =  await MovieModel.findOne({ tmdbId: id });
+    const movie =  await prisma.movie.findFirst({ where: { tmdbId: Number(id) } });
     if (!movie) return AppError(res, 404, "we couldn't find Movie Link with this id");
     return AppSuccess(res, 200, "Movie found", movie);
 }
@@ -15,8 +15,7 @@ export const GetMovieLink = async (req: Request, res: Response) => {
 export const SetMovieLink = async (req: Request, res: Response) => {
     const movie = req.body;
     if(!movie) return AppError(res, 400, "Movie Dose not provided");
-    const newMovie = await MovieModel.create(movie);
-    const save = await newMovie.save();
-    if (!save) return AppError(res, 500, "Movie not created");
+    const newMovie = await prisma.movie.create({ data: movie });
+    if (!newMovie) return AppError(res, 500, "Movie not created");
     return AppSuccess(res, 201, "Movie created", newMovie);
 }

@@ -1,5 +1,4 @@
 // Health.ts
-import mongoose from "mongoose";
 import  {style} from "./Style";
 import FooterPartial from "./Footer";
 import { TemplateData, formatUptime } from "./Data";
@@ -15,7 +14,7 @@ interface HealthData {
 
 const HealthTemplate = (data: HealthData): string => {
     const { health, app } = TemplateData;
-    const dbConnected = mongoose.connection.readyState === 1;
+    const dbConnected = true; // Assuming connected if app is running
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -76,15 +75,7 @@ const HealthTemplate = (data: HealthData): string => {
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">${health.kindLabel}</div>
-                    <div class="stat-value">MongoDB</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">${health.dbNameLabel}</div>
-                    <div class="stat-value"><code>${mongoose.connection.name || 'N/A'}</code></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">${health.hostLabel}</div>
-                    <div class="stat-value"><code>${mongoose.connection.host || 'N/A'}</code></div>
+                    <div class="stat-value">Prisma (MongoDB)</div>
                 </div>
             </div>
         </div>

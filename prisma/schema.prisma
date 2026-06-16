@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  email            String    @unique
+  password         String
+  phone            String    @unique
+  name             String
+  role             String    @default("user")
+  isVerified       Boolean   @default(false)
+  isActive         Boolean   @default(true)
+  lastLogin        DateTime?
+  avatar           String?
+  age              Int?
+  dateOfBirth      DateTime?
+  address          Json?
+  emergencyContact Json?
+  maritalStatus    String    @default("Unknown")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  otp       OTP[]
+  auditLogs Audit[]
+}
+
+model Movie {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  title   String
+  year    Int
+  tmdbId  Int?
+  linked  Boolean @default(false)
+  linkURL String?
+}
+
+model OTP {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  otpCode   String
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("otps")
+}
+
+model Audit {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?  @db.ObjectId
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  request   Json
+  response  Json
+  createdAt DateTime @default(now())
+
+  @@map("audits")
+}

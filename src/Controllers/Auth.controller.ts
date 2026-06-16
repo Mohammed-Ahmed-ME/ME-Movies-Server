@@ -2,7 +2,7 @@ import { Request, Response }  from 'express';
 import bcrypt                  from 'bcryptjs';
 
 import { AppError, AppSuccess }  from '../utils/Res';
-import { UserModel }             from '../Models/index';
+import prisma from '../Models/index';
 import { generateAccessToken }   from '../utils/token.utils';
 import {
   createAndSendOtp,
@@ -23,8 +23,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, phone } = req.body;
 
-    const existing = await UserModel.findOne({
-      $or: [{ email }, { phone }],
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ email }, { phone }] },
     });
 
     if (existing) {
@@ -32,7 +32,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await new UserModel(req.body).save();
+    const user = await prisma.user.create({ data: req.body });
 
     const otpSessionToken = await createAndSendOtp(user.email, user.id, 'verify');
 
@@ -59,7 +59,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await UserModel.findOne({ email }).select('+password');
+    const user = await prisma.user.findUnique({ where: { email } });
 
     // Use a generic message to avoid user enumeration
     if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -79,21 +79,23 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() }
+    });
 
-    const accessToken = await generateAccessToken(user.id, user.role);
+    const accessToken = await generateAccessToken(updatedUser.id, updatedUser.role);
 
     // Fire-and-forget login notification — doesn't block the response
     sendLoginNotification({
-      email:     user.email,
-      username:  user.name,
-      loginTime: user.lastLogin,
+      email:     updatedUser.email,
+      username:  updatedUser.name,
+      loginTime: updatedUser.lastLogin!,
       ...extractRequestMeta(req),
     });
 
     AppSuccess(res, 200, 'Login successful.', {
-      user:        user.toObject(),
+      user:        updatedUser,
       accessToken,
       isVerified:  true,
     });
@@ -119,7 +121,7 @@ export const verifyAccount = async (
       return;
     }
 
-    const user = await UserModel.findById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       AppError(res, 404, 'User not found.');
       return;
@@ -133,17 +135,18 @@ export const verifyAccount = async (
     // Throws descriptive error on invalid/expired/too-many-attempts
     await verifyOtpCode(userId, otpCode);
 
-    user.isVerified = true;
-    user.lastLogin  = new Date();
-    await user.save();
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { isVerified: true, lastLogin: new Date() }
+    });
 
-    const accessToken = await generateAccessToken(user.id, user.role);
+    const accessToken = await generateAccessToken(updatedUser.id, updatedUser.role);
 
     // Fire-and-forget welcome email
-    sendWelcomeEmail(user.email, user.name);
+    sendWelcomeEmail(updatedUser.email, updatedUser.name);
 
     AppSuccess(res, 200, 'Account verified successfully.', {
-      user:       user.toObject(),
+      user:       updatedUser,
       accessToken,
       isVerified: true,
     });
@@ -171,7 +174,7 @@ export const resendOtp = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await UserModel.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       // Generic message to avoid user enumeration
       AppSuccess(res, 200, 'If this email exists, a new OTP has been sent.');
@@ -211,7 +214,7 @@ export const requestPasswordReset = async (
       return;
     }
 
-    const user = await UserModel.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       // Don't reveal whether this email is registered
@@ -247,7 +250,7 @@ export const resetPassword = async (
       return;
     }
 
-    const user = await UserModel.findById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       AppError(res, 404, 'User not found.');
       return;
@@ -256,8 +259,11 @@ export const resetPassword = async (
     // Throws on invalid OTP, expired, or too many attempts
     await verifyOtpCode(userId, otpCode);
 
-    user.password = password;   // pre-save hook in UserModel hashes this
-    await user.save();
+    const hashedPassword = await bcrypt.hash(password, 12);
+    await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword }
+    });
 
     AppSuccess(res, 200, 'Password reset successfully. You can now log in.');
   } catch (err: any) {

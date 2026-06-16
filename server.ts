@@ -1,6 +1,4 @@
-import mongoose from "mongoose";
-mongoose.set("bufferCommands", false);
-
+import 'dotenv/config';
 import app from "./src/app";
 import Connect, { closeDatabase } from "./src/config/db/dbConnect";
 

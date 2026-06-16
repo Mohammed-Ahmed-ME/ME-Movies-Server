@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/Res";
-import UserModel from "../Models/UserModel";
+import prisma from "../Models";
 
 type TargetIdSource = "params" | "body" | "query";
 
@@ -24,7 +24,7 @@ export const AuthorizeRoute = (options: AuthorizeOptions = {}) => {
       const userId = (req as any).user?.id;
       if (!userId) return AppError(res, 401, "Unauthorized");
 
-      const user = await UserModel.findById(userId);
+      const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) return AppError(res, 404, "User not found");
 
       // ✅ Role-based access
